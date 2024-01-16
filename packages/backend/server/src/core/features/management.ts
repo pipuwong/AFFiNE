@@ -101,7 +101,11 @@ export class FeatureManagementService {
     email: string,
     type: EarlyAccessType = EarlyAccessType.App
   ) {
-    if (this.config.featureFlags.earlyAccessPreview && !this.isStaff(email)) {
+    const earlyAccessControlEnabled = await this.config.runtime.fetch(
+      'flags/earlyAccessControl'
+    );
+
+    if (earlyAccessControlEnabled && !this.isStaff(email)) {
       return this.isEarlyAccessUser(email, type);
     } else {
       return true;

@@ -10,7 +10,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 
-import { Config, SkipThrottle, Throttle } from '../../fundamentals';
+import { Config, SkipThrottle, Throttle, URLHelper } from '../../fundamentals';
 import { UserService } from '../user';
 import { UserType } from '../user/types';
 import { validators } from '../utils/validators';
@@ -36,6 +36,7 @@ export class ClientTokenType {
 export class AuthResolver {
   constructor(
     private readonly config: Config,
+    private readonly url: URLHelper,
     private readonly auth: AuthService,
     private readonly user: UserService,
     private readonly token: TokenService
@@ -83,7 +84,14 @@ export class AuthResolver {
     @Args('token') token: string,
     @Args('newPassword') newPassword: string
   ) {
-    validators.assertValidPassword(newPassword);
+    const config = await this.config.runtime.fetchAll({
+      'auth/password.max': true,
+      'auth/password.min': true,
+    });
+    validators.assertValidPassword(newPassword, {
+      min: config['auth/password.min'],
+      max: config['auth/password.max'],
+    });
     // NOTE: Set & Change password are using the same token type.
     const valid = await this.token.verifyToken(
       TokenType.ChangePassword,
@@ -142,13 +150,9 @@ export class AuthResolver {
       user.id
     );
 
-    const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', token);
+    const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendChangePasswordEmail(
-      user.email,
-      url.toString()
-    );
+    const res = await this.auth.sendChangePasswordEmail(user.email, url);
 
     return !res.rejected.length;
   }
@@ -168,13 +172,9 @@ export class AuthResolver {
       user.id
     );
 
-    const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', token);
+    const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendSetPasswordEmail(
-      user.email,
-      url.toString()
-    );
+    const res = await this.auth.sendSetPasswordEmail(user.email, url);
     return !res.rejected.length;
   }
 
@@ -198,10 +198,9 @@ export class AuthResolver {
 
     const token = await this.token.createToken(TokenType.ChangeEmail, user.id);
 
-    const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', token);
+    const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendChangeEmail(user.email, url.toString());
+    const res = await this.auth.sendChangeEmail(user.email, url);
     return !res.rejected.length;
   }
 
@@ -238,11 +237,8 @@ export class AuthResolver {
       user.id
     );
 
-    const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', verifyEmailToken);
-    url.searchParams.set('email', email);
-
-    const res = await this.auth.sendVerifyChangeEmail(email, url.toString());
+    const url = this.url.link(callbackUrl, { token: verifyEmailToken, email });
+    const res = await this.auth.sendVerifyChangeEmail(email, url);
 
     return !res.rejected.length;
   }
@@ -254,10 +250,9 @@ export class AuthResolver {
   ) {
     const token = await this.token.createToken(TokenType.VerifyEmail, user.id);
 
-    const url = new URL(callbackUrl, this.config.baseUrl);
-    url.searchParams.set('token', token);
+    const url = this.url.link(callbackUrl, { token });
 
-    const res = await this.auth.sendVerifyEmail(user.email, url.toString());
+    const res = await this.auth.sendVerifyEmail(user.email, url);
     return !res.rejected.length;
   }
 

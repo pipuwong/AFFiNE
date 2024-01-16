@@ -3,6 +3,7 @@ import { merge } from 'lodash-es';
 
 import { ApplyType } from '../utils/types';
 import { AFFiNEConfig } from './def';
+import { Runtime } from './runtime/service';
 
 /**
  * @example
@@ -16,42 +17,30 @@ import { AFFiNEConfig } from './def';
  *   }
  * }
  */
-export class Config extends ApplyType<AFFiNEConfig>() {}
+export class Config extends ApplyType<AFFiNEConfig>() {
+  runtime!: Runtime;
+}
 
 function createConfigProvider(
   override?: DeepPartial<Config>
 ): FactoryProvider<Config> {
   return {
     provide: Config,
-    useFactory: () => {
-      const wrapper = new Config();
-      const config = merge({}, globalThis.AFFiNE, override);
-
-      const proxy: Config = new Proxy(wrapper, {
-        get: (_target, property: keyof Config) => {
-          const desc = Object.getOwnPropertyDescriptor(
-            globalThis.AFFiNE,
-            property
-          );
-          if (desc?.get) {
-            return desc.get.call(proxy);
-          }
-          return config[property];
-        },
-      });
-      return proxy;
+    useFactory: runtime => {
+      return Object.freeze(merge({}, globalThis.AFFiNE, override, { runtime }));
     },
+    inject: [Runtime],
   };
 }
 
 export class ConfigModule {
-  static forRoot = (override?: DeepPartial<Config>): DynamicModule => {
+  static forRoot = (override?: DeepPartial<AFFiNEConfig>): DynamicModule => {
     const provider = createConfigProvider(override);
 
     return {
       global: true,
       module: ConfigModule,
-      providers: [provider],
+      providers: [provider, Runtime],
       exports: [provider],
     };
   };

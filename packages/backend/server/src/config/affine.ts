@@ -26,11 +26,11 @@
 // AFFiNE.serverName = 'Your Cool AFFiNE Selfhosted Cloud';
 //
 // /* Whether the server is deployed behind a HTTPS proxied environment */
-AFFiNE.https = false;
+AFFiNE.server.https = false;
 // /* Domain of your server that your server will be available at */
-AFFiNE.host = 'localhost';
+AFFiNE.server.host = 'localhost';
 // /* The local port of your server that will listen on */
-AFFiNE.port = 3010;
+AFFiNE.server.port = 3010;
 // /* The sub path of your server */
 // /* For example, if you set `AFFiNE.path = '/affine'`, then the server will be available at `${domain}/affine` */
 // AFFiNE.path = '/affine';

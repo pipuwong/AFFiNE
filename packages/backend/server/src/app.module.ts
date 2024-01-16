@@ -17,8 +17,11 @@ import { UserModule } from './core/user';
 import { WorkspaceModule } from './core/workspaces';
 import { getOptionalModuleMetadata } from './fundamentals';
 import { CacheModule } from './fundamentals/cache';
-import type { AvailablePlugins } from './fundamentals/config';
-import { Config, ConfigModule } from './fundamentals/config';
+import {
+  Config,
+  ConfigModule,
+  mergeConfigOverride,
+} from './fundamentals/config';
 import { EventModule } from './fundamentals/event';
 import { GqlModule } from './fundamentals/graphql';
 import { HelpersModule } from './fundamentals/helpers';
@@ -30,8 +33,10 @@ import { StorageProviderModule } from './fundamentals/storage';
 import { RateLimiterModule } from './fundamentals/throttler';
 import { WebSocketModule } from './fundamentals/websocket';
 import { REGISTERED_PLUGINS } from './plugins';
+import { ENABLED_PLUGINS } from './plugins/registry';
 
 export const FunctionalityModules = [
+  ConfigModule.forRoot(),
   ConfigModule.forRoot(),
   ScheduleModule.forRoot(),
   EventModule,
@@ -112,6 +117,8 @@ export class AppModuleBuilder {
 }
 
 function buildAppModule() {
+  AFFiNE = mergeConfigOverride(AFFiNE);
+  // @ts-expect-error runtime instance will be injected after config instance created
   const factor = new AppModuleBuilder(AFFiNE);
 
   factor
@@ -147,8 +154,8 @@ function buildAppModule() {
     );
 
   // plugin modules
-  AFFiNE.plugins.enabled.forEach(name => {
-    const plugin = REGISTERED_PLUGINS.get(name as AvailablePlugins);
+  ENABLED_PLUGINS.forEach(name => {
+    const plugin = REGISTERED_PLUGINS.get(name);
     if (!plugin) {
       throw new Error(`Unknown plugin ${name}`);
     }

@@ -56,7 +56,7 @@ export interface CreateCheckoutSessionInput {
   idempotencyKey: Scalars['String']['input'];
   plan: InputMaybe<SubscriptionPlan>;
   recurring: InputMaybe<SubscriptionRecurring>;
-  successCallbackLink: InputMaybe<Scalars['String']['input']>;
+  successCallbackLink: Scalars['String']['input'];
 }
 
 export enum EarlyAccessType {

@@ -3,15 +3,16 @@ import assert from 'node:assert';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { Config } from '../../../fundamentals';
+import { CopilotStartupConfigurations } from '../config';
 import {
   CapabilityToCopilotProvider,
   CopilotCapability,
-  CopilotConfig,
   CopilotProvider,
   CopilotProviderType,
 } from '../types';
 
-type CopilotProviderConfig = CopilotConfig[keyof CopilotConfig];
+type CopilotProviderConfig =
+  CopilotStartupConfigurations[keyof CopilotStartupConfigurations];
 
 interface CopilotProviderDefinition<C extends CopilotProviderConfig> {
   // constructor signature

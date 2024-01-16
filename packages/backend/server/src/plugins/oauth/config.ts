@@ -1,3 +1,5 @@
+import { defineStartupConfig, ModuleConfig } from '../../fundamentals/config';
+
 export interface OAuthProviderConfig {
   clientId: string;
   clientSecret: string;
@@ -10,6 +12,15 @@ export enum OAuthProviderName {
 }
 
 export interface OAuthConfig {
-  enabled: boolean;
   providers: Partial<{ [key in OAuthProviderName]: OAuthProviderConfig }>;
 }
+
+declare module '../config' {
+  interface PluginsConfig {
+    oauth: ModuleConfig<OAuthConfig>;
+  }
+}
+
+defineStartupConfig('plugins.oauth', {
+  providers: {},
+});

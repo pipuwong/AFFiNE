@@ -30,7 +30,7 @@ class Redis extends IORedis implements OnModuleDestroy, OnModuleInit {
 @Injectable()
 export class CacheRedis extends Redis {
   constructor(config: Config) {
-    super(config.plugins.redis ?? {});
+    super(config.plugins.redis);
   }
 }
 

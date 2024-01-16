@@ -72,10 +72,10 @@ export class AuthGuard implements CanActivate, OnModuleInit {
     }
 
     // api is public
-    const isPublic = this.reflector.get<boolean>(
-      'isPublic',
-      context.getHandler()
-    );
+    const isPublic = this.reflector.getAllAndOverride<boolean>('isPublic', [
+      context.getClass(),
+      context.getHandler(),
+    ]);
 
     if (isPublic) {
       return true;

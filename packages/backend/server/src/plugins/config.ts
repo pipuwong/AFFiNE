@@ -1,3 +1,4 @@
+import { CaptchaConfig } from './captcha';
 import { CopilotConfig } from './copilot';
 import { GCloudConfig } from './gcloud/config';
 import { OAuthConfig } from './oauth';
@@ -14,6 +15,7 @@ declare module '../fundamentals/config' {
     readonly 'cloudflare-r2': R2StorageConfig;
     readonly 'aws-s3': S3StorageConfig;
     readonly oauth: OAuthConfig;
+    readonly captcha: CaptchaConfig;
   }
 
   export type AvailablePlugins = keyof PluginsConfig;

@@ -160,15 +160,6 @@ export const getDefaultAFFiNEConfig: () => AFFiNEConfig = () => {
         ttl: 7 * ONE_DAY_IN_SEC,
         refreshTokenTtl: 30 * ONE_DAY_IN_SEC,
       },
-      captcha: {
-        enable: false,
-        turnstile: {
-          secret: '1x0000000000000000000000000000000AA',
-        },
-        challenge: {
-          bits: 20,
-        },
-      },
     },
     storage: getDefaultAFFiNEStorageConfig(),
     rateLimiter: {

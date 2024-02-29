@@ -6,6 +6,8 @@ import { PrismaClient } from '@prisma/client';
 
 import { CryptoHelper } from '../../fundamentals/helpers';
 
+type Transaction = Parameters<Parameters<PrismaClient['$transaction']>[0]>[0];
+
 export enum TokenType {
   SignIn,
   VerifyEmail,
@@ -52,38 +54,46 @@ export class TokenService {
     } = {}
   ) {
     token = this.crypto.decrypt(token);
-    const record = await this.db.verificationToken.findUnique({
-      where: {
-        type_token: {
-          token,
-          type,
-        },
-      },
-    });
-
-    if (!record) {
-      return null;
-    }
-
-    const expired = record.expiresAt <= new Date();
-    const valid =
-      !expired && (!record.credential || record.credential === credential);
-
-    if ((expired || valid) && !keep) {
-      const deleted = await this.db.verificationToken.deleteMany({
+    return await this.db.$transaction(async tx => {
+      const record = await tx.verificationToken.findUnique({
         where: {
-          token,
-          type,
+          type_token: {
+            token,
+            type,
+          },
         },
       });
 
-      // already deleted, means token has been used
-      if (!deleted.count) {
+      if (!record) {
         return null;
       }
-    }
 
-    return valid ? record : null;
+      const expired = record.expiresAt <= new Date();
+      const valid =
+        !expired && (!record.credential || record.credential === credential);
+
+      // always revoke expired token
+      if (expired || (valid && !keep)) {
+        const deleted = await this.revokeToken(type, token, tx);
+
+        // already deleted, means token has been used
+        if (!deleted.count) {
+          return null;
+        }
+      }
+
+      return valid ? record : null;
+    });
+  }
+
+  async revokeToken(type: TokenType, token: string, tx?: Transaction) {
+    const client = tx || this.db;
+    return await client.verificationToken.deleteMany({
+      where: {
+        token,
+        type,
+      },
+    });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)

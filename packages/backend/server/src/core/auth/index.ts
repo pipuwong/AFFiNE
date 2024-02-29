@@ -12,7 +12,7 @@ import { TokenService, TokenType } from './token';
 @Module({
   imports: [FeatureModule, UserModule, QuotaModule],
   providers: [AuthService, AuthResolver, TokenService, AuthGuard],
-  exports: [AuthService, AuthGuard],
+  exports: [AuthService, AuthGuard, TokenService],
   controllers: [AuthController],
 })
 export class AuthModule {}

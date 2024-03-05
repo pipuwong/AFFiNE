@@ -54,36 +54,34 @@ export class TokenService {
     } = {}
   ) {
     token = this.crypto.decrypt(token);
-    return await this.db.$transaction(async tx => {
-      const record = await tx.verificationToken.findUnique({
-        where: {
-          type_token: {
-            token,
-            type,
-          },
+    const record = await this.db.verificationToken.findUnique({
+      where: {
+        type_token: {
+          token,
+          type,
         },
-      });
+      },
+    });
 
-      if (!record) {
+    if (!record) {
+      return null;
+    }
+
+    const expired = record.expiresAt <= new Date();
+    const valid =
+      !expired && (!record.credential || record.credential === credential);
+
+    // always revoke expired token
+    if (expired || (valid && !keep)) {
+      const deleted = await this.revokeToken(type, token, this.db);
+
+      // already deleted, means token has been used
+      if (!deleted.count) {
         return null;
       }
+    }
 
-      const expired = record.expiresAt <= new Date();
-      const valid =
-        !expired && (!record.credential || record.credential === credential);
-
-      // always revoke expired token
-      if (expired || (valid && !keep)) {
-        const deleted = await this.revokeToken(type, token, tx);
-
-        // already deleted, means token has been used
-        if (!deleted.count) {
-          return null;
-        }
-      }
-
-      return valid ? record : null;
-    });
+    return valid ? record : null;
   }
 
   async revokeToken(type: TokenType, token: string, tx?: Transaction) {

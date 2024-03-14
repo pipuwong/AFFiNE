@@ -19,7 +19,6 @@ export const runtimeFlagsSchema = z.object({
   enableNewSettingModal: z.boolean(),
   enableNewSettingUnstableApi: z.boolean(),
   enableCloud: z.boolean(),
-  enableCaptcha: z.boolean(),
   enableEnhanceShareMode: z.boolean(),
   enablePayment: z.boolean(),
   enablePageHistory: z.boolean(),

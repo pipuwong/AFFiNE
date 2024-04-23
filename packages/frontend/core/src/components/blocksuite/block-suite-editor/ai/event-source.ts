@@ -27,6 +27,17 @@ const safeParseError = (data: string): { status: number } => {
   }
 };
 
+// todo: may need to extend the error type
+const safeParseError = (data: string): { status: number } => {
+  try {
+    return JSON.parse(data);
+  } catch {
+    return {
+      status: 500,
+    };
+  }
+};
+
 export function toTextStream(
   eventSource: EventSource,
   { timeout, signal }: toTextStreamOptions = {}

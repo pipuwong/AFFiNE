@@ -1,10 +1,11 @@
 import { apis } from '@affine/electron-api';
 import { Turnstile } from '@marsidev/react-turnstile';
+import { useLiveData, useService } from '@toeverything/infra';
 import { atom, useAtom, useSetAtom } from 'jotai';
 import { useEffect, useRef } from 'react';
 import useSWR from 'swr';
 
-import { useServerFeatures } from '../../../hooks/affine/use-server-config';
+import { ServerConfigService } from '../../../modules/cloud';
 import * as style from './style.css';
 
 type Challenge = {
@@ -39,10 +40,16 @@ const generateChallengeResponse = async (challenge: string) => {
 const captchaAtom = atom<string | undefined>(undefined);
 const responseAtom = atom<string | undefined>(undefined);
 
+const useHasCaptcha = () => {
+  const serverConfig = useService(ServerConfigService).serverConfig;
+  const hasCaptcha = useLiveData(serverConfig.features$.map(r => r?.captcha));
+  return hasCaptcha || false;
+};
+
 export const Captcha = () => {
   const setCaptcha = useSetAtom(captchaAtom);
   const [response] = useAtom(responseAtom);
-  const { captcha: hasCaptchaFeature } = useServerFeatures();
+  const hasCaptchaFeature = useHasCaptcha();
 
   if (!hasCaptchaFeature) {
     return null;
@@ -68,7 +75,7 @@ export const Captcha = () => {
 export const useCaptcha = (): [string | undefined, string?] => {
   const [verifyToken] = useAtom(captchaAtom);
   const [response, setResponse] = useAtom(responseAtom);
-  const { captcha: hasCaptchaFeature } = useServerFeatures();
+  const hasCaptchaFeature = useHasCaptcha();
 
   const { data: challenge } = useSWR('/api/auth/challenge', challengeFetcher, {
     suspense: false,

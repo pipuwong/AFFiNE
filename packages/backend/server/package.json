@@ -9,12 +9,12 @@
   },
   "scripts": {
     "build": "tsc",
-    "start": "node --loader ts-node/esm/transpile-only.mjs ./src/index.ts",
+    "start": "node --import ./scripts/register.js ./src/index.ts",
     "dev": "nodemon ./src/index.ts",
     "test": "ava --concurrency 1 --serial",
     "test:coverage": "c8 ava --concurrency 1 --serial",
     "postinstall": "prisma generate",
-    "data-migration": "node --loader ts-node/esm/transpile-only.mjs ./src/data/index.ts",
+    "data-migration": "node --import ./scripts/register.js ./src/data/index.ts",
     "predeploy": "yarn prisma migrate deploy && node --import ./scripts/register.js ./dist/data/index.js run"
   },
   "dependencies": {
@@ -40,8 +40,8 @@
     "@node-rs/jsonwebtoken": "^0.5.2",
     "@opentelemetry/api": "^1.8.0",
     "@opentelemetry/core": "^1.23.0",
-    "@opentelemetry/exporter-prometheus": "^0.50.0",
-    "@opentelemetry/exporter-zipkin": "^1.23.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.50.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.50.0",
     "@opentelemetry/host-metrics": "^0.35.0",
     "@opentelemetry/instrumentation": "^0.50.0",
     "@opentelemetry/instrumentation-graphql": "^0.39.0",
@@ -55,7 +55,7 @@
     "@opentelemetry/sdk-trace-node": "^1.23.0",
     "@opentelemetry/semantic-conventions": "^1.23.0",
     "@prisma/client": "^5.12.1",
-    "@prisma/instrumentation": "^5.12.1",
+    "@prisma/instrumentation": "^5.13",
     "@socket.io/redis-adapter": "^8.3.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.4.5",
@@ -154,9 +154,8 @@
     "exec": "node",
     "script": "./src/index.ts",
     "nodeArgs": [
-      "--loader",
-      "ts-node/esm.mjs",
-      "--es-module-specifier-resolution=node"
+      "--import",
+      "./scripts/register.js"
     ],
     "ignore": [
       "**/__tests__/**",

@@ -1,5 +1,6 @@
 /// <reference types="./global.d.ts" />
 import './prelude';
+import './fundamentals/metrics/register';
 
 import { Logger } from '@nestjs/common';
 

@@ -14,4 +14,5 @@ import { CaptchaService } from './service';
 })
 export class CaptchaModule {}
 
+export { Captcha } from './guard';
 export type { CaptchaConfig } from './types';

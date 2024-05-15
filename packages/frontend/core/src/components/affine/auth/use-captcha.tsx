@@ -29,6 +29,7 @@ const challengeFetcher = async (url: string) => {
 
   return challenge;
 };
+
 const generateChallengeResponse = async (challenge: string) => {
   if (!environment.isDesktop) {
     return undefined;

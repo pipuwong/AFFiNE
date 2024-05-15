@@ -17,23 +17,6 @@ test('can validate', t => {
     validators.assertValidCredential({
       email: 'test@example.com',
       password: 'password',
-      token: 'captchaToken',
-    })
-  );
-  // verify with challenge
-  t.notThrows(() =>
-    validators.assertValidCredential({
-      email: 'test@example.com',
-      password: 'password',
-      token: 'verifyToken',
-      challenge: 'challenge',
-    })
-  );
-  t.throws(() =>
-    validators.assertValidCredential({
-      email: 'test@example.com',
-      password: 'password',
-      challenge: 'challenge',
     })
   );
 });

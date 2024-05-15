@@ -4,11 +4,16 @@ import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import type { Request } from 'express';
 import { nanoid } from 'nanoid';
+import { z } from 'zod';
 
 import { TokenService, TokenType } from '../../core/auth/token';
-import { Credential } from '../../core/utils/validators';
 import { Config, verifyChallengeResponse } from '../../fundamentals';
 import { CaptchaConfig } from './types';
+
+const validator = z
+  .object({ token: z.string(), challenge: z.string().optional() })
+  .strict();
+type Credential = z.infer<typeof validator>;
 
 @Injectable()
 export class CaptchaService {
@@ -67,6 +72,14 @@ export class CaptchaService {
       challenge,
       resource,
     };
+  }
+
+  assertValidCredential(credential: any): Credential {
+    try {
+      return validator.parse(credential);
+    } catch (e) {
+      throw new BadRequestException('Invalid Credential');
+    }
   }
 
   async verifyRequest(credential: Credential, req: Request) {

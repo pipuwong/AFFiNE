@@ -17,8 +17,6 @@ function getAuthCredentialValidator() {
     .object({
       email,
       password,
-      token: z.string(),
-      challenge: z.string().optional(),
     })
     .strict();
 }
@@ -45,9 +43,7 @@ export function assertValidPassword(password: string) {
   return assertValid(getAuthCredentialValidator().shape.password, password);
 }
 
-export function assertValidCredential(
-  credential: Omit<Credential, 'token'> & { token?: string }
-) {
+export function assertValidCredential(credential: Credential) {
   return assertValid(getAuthCredentialValidator(), credential);
 }
 

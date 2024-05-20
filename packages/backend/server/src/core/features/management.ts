@@ -1,11 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
 
 import { Config } from '../../fundamentals';
+import { UserService } from '../user/service';
 import { FeatureService } from './service';
 import { FeatureType } from './types';
-
-const STAFF = ['@toeverything.info'];
 
 export enum EarlyAccessType {
   App = 'app',
@@ -18,20 +16,14 @@ export class FeatureManagementService {
 
   constructor(
     private readonly feature: FeatureService,
-    private readonly prisma: PrismaClient,
-    private readonly config: Config
+    private readonly config: Config,
+    private readonly user: UserService
   ) {}
 
   // ======== Admin ========
 
-  // todo(@darkskygit): replace this with abac
-  isStaff(email: string) {
-    for (const domain of STAFF) {
-      if (email.endsWith(domain)) {
-        return true;
-      }
-    }
-    return false;
+  isAdmin(userId: string) {
+    return this.feature.hasUserFeature(userId, FeatureType.Admin);
   }
 
   // ======== Early Access ========
@@ -69,31 +61,17 @@ export class FeatureManagementService {
   }
 
   async isEarlyAccessUser(
-    email: string,
+    userId: string,
     type: EarlyAccessType = EarlyAccessType.App
   ) {
-    const user = await this.prisma.user.findFirst({
-      where: {
-        email: {
-          equals: email,
-          mode: 'insensitive',
-        },
-      },
-    });
-
-    if (user) {
-      const canEarlyAccess = await this.feature
-        .hasUserFeature(
-          user.id,
-          type === EarlyAccessType.App
-            ? FeatureType.EarlyAccess
-            : FeatureType.AIEarlyAccess
-        )
-        .catch(() => false);
-
-      return canEarlyAccess;
-    }
-    return false;
+    return await this.feature
+      .hasUserFeature(
+        userId,
+        type === EarlyAccessType.App
+          ? FeatureType.EarlyAccess
+          : FeatureType.AIEarlyAccess
+      )
+      .catch(() => false);
   }
 
   /// check early access by email
@@ -105,11 +83,17 @@ export class FeatureManagementService {
       'flags/earlyAccessControl'
     );
 
-    if (earlyAccessControlEnabled && !this.isStaff(email)) {
-      return this.isEarlyAccessUser(email, type);
-    } else {
+    if (!earlyAccessControlEnabled) {
       return true;
     }
+
+    const user = await this.user.findUserByEmail(email);
+
+    if (!user) {
+      return false;
+    }
+
+    return this.isEarlyAccessUser(user.id, type);
   }
 
   // ======== CopilotFeature ========

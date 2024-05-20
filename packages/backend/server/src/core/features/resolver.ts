@@ -6,25 +6,38 @@ import {
   Mutation,
   Query,
   registerEnumType,
+  ResolveField,
   Resolver,
 } from '@nestjs/graphql';
 
 import { CurrentUser } from '../auth/current-user';
 import { sessionUser } from '../auth/service';
-import { EarlyAccessType, FeatureManagementService } from '../features';
-import { UserService } from './service';
-import { UserType } from './types';
+import {
+  EarlyAccessType,
+  FeatureManagementService,
+  FeatureType,
+} from '../features';
+import { UserService } from '../user/service';
+import { UserType } from '../user/types';
 
 registerEnumType(EarlyAccessType, {
   name: 'EarlyAccessType',
 });
 
 @Resolver(() => UserType)
-export class UserManagementResolver {
+export class FeatureManagementResolver {
   constructor(
     private readonly users: UserService,
     private readonly feature: FeatureManagementService
   ) {}
+
+  @ResolveField(() => [FeatureType], {
+    name: 'features',
+    description: 'Enabled features of a user',
+  })
+  async userFeatures(@CurrentUser() user: CurrentUser) {
+    return this.feature.getActivatedUserFeatures(user.id);
+  }
 
   @Mutation(() => Int)
   async addToEarlyAccess(

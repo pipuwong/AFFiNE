@@ -1,5 +1,6 @@
-import type { BlockElement } from '@blocksuite/block-std';
-import type { Disposable } from '@blocksuite/global/utils';
+import { ViewService } from '@affine/core/modules/workbench/services/view';
+import type { BaseSelection, BlockElement } from '@blocksuite/block-std';
+import { DisposableGroup } from '@blocksuite/global/utils';
 import type {
   AffineEditorContainer,
   EdgelessEditor,
@@ -7,7 +8,11 @@ import type {
 } from '@blocksuite/presets';
 import type { Doc } from '@blocksuite/store';
 import { Slot } from '@blocksuite/store';
-import type { DocMode } from '@toeverything/infra';
+import {
+  type DocMode,
+  useLiveData,
+  useServiceOptional,
+} from '@toeverything/infra';
 import clsx from 'clsx';
 import type React from 'react';
 import type { RefObject } from 'react';
@@ -208,32 +213,12 @@ export const BlocksuiteEditorContainer = forwardRef<
   }, [affineEditorContainerProxy, ref]);
 
   const blockElement = useBlockElementById(rootRef, defaultSelectedBlockId);
+  const currentView = useServiceOptional(ViewService)?.view;
+  const viewLocation = useLiveData(currentView?.location$);
+  const currentPath = viewLocation?.pathname;
+  const locationHash = viewLocation?.hash;
 
   useEffect(() => {
-    let disposable: Disposable | undefined = undefined;
-
-    // update the hash when the block is selected
-    const handleUpdateComplete = () => {
-      const selectManager = affineEditorContainerProxy?.host?.selection;
-      if (!selectManager) return;
-
-      disposable = selectManager.slots.changed.on(() => {
-        const selectedBlock = selectManager.find('block');
-        const selectedId = selectedBlock?.blockId;
-
-        const newHash = selectedId ? `#${selectedId}` : '';
-        //TODO: use activeView.history which is in workbench instead of history.replaceState
-        history.replaceState(null, '', `${window.location.pathname}${newHash}`);
-
-        // Dispatch a custom event to notify the hash change
-        const hashChangeEvent = new CustomEvent('hashchange-custom', {
-          detail: { hash: newHash },
-        });
-        window.dispatchEvent(hashChangeEvent);
-      });
-    };
-
-    // scroll to the block element when the block id is provided and the page is first loaded
     const handleScrollToBlock = (blockElement: BlockElement) => {
       if (mode === 'page') {
         blockElement.scrollIntoView({
@@ -249,22 +234,71 @@ export const BlocksuiteEditorContainer = forwardRef<
         blockId: blockElement.blockId,
       });
       selectManager.set([newSelection]);
-      setScrolled(true);
     };
 
     affineEditorContainerProxy.updateComplete
       .then(() => {
         if (blockElement && !scrolled) {
           handleScrollToBlock(blockElement);
+          setScrolled(true);
         }
-        handleUpdateComplete();
       })
       .catch(console.error);
+  }, [
+    blockElement,
+    affineEditorContainerProxy,
+    mode,
+    scrolled,
+    currentPath,
+    locationHash,
+  ]);
 
-    return () => {
-      disposable?.dispose();
+  useEffect(() => {
+    if (locationHash && !scrolled) {
+      return;
+    }
+
+    const group = new DisposableGroup();
+
+    // Function to handle block selection change
+    const handleSelectionChange = (selection: BaseSelection[]) => {
+      if (!currentView || !currentPath) {
+        return;
+      }
+      if (selection[0]?.type !== 'block') {
+        return currentView.history.replace(currentPath);
+      }
+
+      const selectedId = selection[0]?.blockId;
+      if (!selectedId) {
+        return;
+      }
+      const newHash = `#${selectedId}`;
+
+      // // Only update the hash if it has changed
+      if (locationHash !== newHash) {
+        currentView.history.replace(currentPath + newHash);
+      }
     };
-  }, [blockElement, affineEditorContainerProxy, mode, scrolled]);
+    affineEditorContainerProxy.updateComplete
+      .then(() => {
+        const selectManager = affineEditorContainerProxy.host?.selection;
+        if (!selectManager) return;
+
+        // Set up the new disposable listener
+        group.add(selectManager.slots.changed.on(handleSelectionChange));
+      })
+      .catch(console.error);
+    return () => {
+      group.dispose();
+    };
+  }, [
+    affineEditorContainerProxy,
+    currentPath,
+    currentView,
+    locationHash,
+    scrolled,
+  ]);
 
   return (
     <div
